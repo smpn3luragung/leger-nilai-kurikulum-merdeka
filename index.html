@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Leger Nilai Kurikulum Merdeka</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 15px;
+            color: #334155;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        h1 { color: #1e293b; margin-top: 0; text-align: center; font-size: 22px; }
+
+        .status-bar {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 8px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        button, .btn-file {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        button:hover, .btn-file:hover { opacity: 0.9; }
+
+        .form-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .field { display: flex; flex-direction: column; }
+        .field label { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #475569; }
+
+        input[type="text"], select {
+            padding: 6px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .tp-section {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .table-wrapper { overflow-x: auto; max-width: 100%; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 4px; text-align: center; }
+        
+        .th-formatif { background-color: #dbeafe; color: #1e40af; }
+        .th-maxmin { background-color: #e0e7ff; color: #3730a3; }
+        .th-sumatif { background-color: #fef3c7; color: #92400e; }
+        .th-akhir { background-color: #dcfce7; color: #166534; }
+
+        input.input-nilai { width: 40px; text-align: center; padding: 4px 2px; border: 1px solid #cbd5e1; border-radius: 4px; }
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📋 Leger Asesmen Kurikulum Merdeka</h1>
+    
+    <div class="status-bar">
+        <span id="saveStatus">🟢 Auto-Save Aktif</span>
+        <small>Terakhir disimpan: <span id="lastSavedTime">-</span></small>
+    </div>
+
+    <!-- Tombol Aksi -->
+    <div class="action-buttons">
+        <button class="btn-success" onclick="downloadBackup()">💾 Simpan File Cadangan (.json)</button>
+        <label class="btn-primary btn-file">
+            📂 Buka File Cadangan
+            <input type="file" id="fileInput" accept=".json" onchange="loadBackupFile(event)">
+        </label>
+        <button class="btn-warning" onclick="exportToExcel()">📊 Unduh Rekap ke Excel</button>
+        <button class="btn-danger" style="margin-left: auto;" onclick="resetForm()">➕ Buat Leger Baru / Reset</button>
+    </div>
+
+    <!-- Identitas Form -->
+    <div class="form-group">
+        <div class="field">
+            <label>Nama Guru</label>
+            <input type="text" id="namaGuru" placeholder="Contoh: Deni Nurdani" oninput="autoSave()">
+        </div>
+        <div class="field">
+            <label>Mata Pelajaran</label>
+            <input type="text" id="mapel" placeholder="Contoh: Bahasa Indonesia" oninput="autoSave()">
+        </div>
+        <div class="field">
+            <label>Kelas</label>
+            <input type="text" id="kelas" placeholder="Contoh: 7A" oninput="autoSave()">
+        </div>
+        <div class="field">
+            <label>Semester / Tahun</label>
+            <input type="text" id="semester" placeholder="Contoh: Ganjil 2024/2025" oninput="autoSave()">
+        </div>
+    </div>
+
+    <!-- Section Input Deskripsi TP -->
+    <div class="tp-section">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 14px;">Deskripsi Tujuan Pembelajaran (TP)</strong>
+            <div>
+                <button class="btn-primary" onclick="tambahTP()">➕ Tambah TP</button>
+                <button class="btn-danger" onclick="hapusTP()">➖ Hapus TP</button>
+            </div>
+        </div>
+        <div class="tp-grid" id="tpContainer"></div>
+    </div>
+
+    <!-- Tabel Leger Nilai (Sesuai Layout Gambar) -->
+    <div class="table-wrapper">
+        <table id="tableLeger">
+            <thead id="theadLeger"></thead>
+            <tbody id="tbodySiswa"></tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 15px; display: flex; gap: 10px;">
+    <button class="btn-primary" onclick="tambahBarisSiswa()">➕ Tambah Baris Siswa</button>
+    <button class="btn-danger" onclick="hapusBarisSiswa()">➖ Hapus Baris Terakhir</button>
+</div>
+</div>
+
+<script>
+    let tpList = [
+        "Membaca teks deskripsi",
+        "Menulis struktur laporan",
+        "Menganalisis kaidah bahasa",
+        "Menyampaikan ide lisan"
+    ];
+
+    let siswaList = [
+        { nama: "Ahmad", jk: "L", formatif: [80, 85, 90, 75], sumatif: [82, 88, 85, 78], sas: 85 },
+        { nama: "Budi", jk: "L", formatif: [70, 75, 80, 85], sumatif: [72, 78, 82, 80], sas: 80 }
+    ];
+
+    function initTable() {
+        renderTPInputs();
+        renderTableHeader();
+        renderTableBody();
+    }
+
+    // Render Input TP Deskripsi
+    function renderTPInputs() {
+        const container = document.getElementById('tpContainer');
+        container.innerHTML = '';
+        tpList.forEach((tp, i) => {
+            container.innerHTML += `
+                <div class="field">
+                    <label>TP ${i+1}</label>
+                    <input type="text" value="${tp}" oninput="tpList[${i}]=this.value; renderTableHeader(); autoSave();" placeholder="Deskripsi TP ${i+1}">
+                </div>
+            `;
+        });
+    }
+
+    function tambahTP() {
+        tpList.push(`Deskripsi TP ${tpList.length + 1}`);
+        siswaList.forEach(s => {
+            s.formatif.push("");
+            s.sumatif.push("");
+        });
+        initTable();
+        autoSave();
+    }
+
+    function hapusTP() {
+        if (tpList.length > 1) {
+            tpList.pop();
+            siswaList.forEach(s => {
+                s.formatif.pop();
+                s.sumatif.pop();
+            });
+            initTable();
+            autoSave();
+        }
+    }
+
+    // Render Header Tabel (Persis Gambar)
+    function renderTableHeader() {
+        const thead = document.getElementById('theadLeger');
+        const tpCount = tpList.length;
+
+        thead.innerHTML = `
+            <tr>
+                <th rowspan="2" style="width: 30px;">NO</th>
+                <th rowspan="2" style="min-width: 160px; text-align: left; padding-left: 8px;">Nama Siswa</th>
+                <th rowspan="2" style="width: 40px;">JK</th>
+                <th colspan="${tpCount}" class="th-formatif">Asesmen Formatif</th>
+                <th colspan="2" class="th-maxmin">Nilai</th>
+                <th rowspan="2" class="th-maxmin" style="min-width: 80px;">TP Max</th>
+                <th rowspan="2" class="th-maxmin" style="min-width: 80px;">TP Min</th>
+                <th colspan="${tpCount}" class="th-sumatif">Asesmen Sumatif</th>
+                <th rowspan="2" class="th-sumatif" style="width: 50px;">Rerata Sumatif</th>
+                <th rowspan="2" class="th-sumatif" style="width: 55px;">R. Sumatif x 60%</th>
+                <th rowspan="2" class="th-sumatif" style="width: 45px;">SAS</th>
+                <th rowspan="2" class="th-sumatif" style="width: 55px;">SAS x 40%</th>
+                <th rowspan="2" class="th-akhir" style="width: 60px;">Nilai Akhir</th>
+            </tr>
+            <tr>
+                ${tpList.map((_, i) => `<th class="th-formatif">TP ${i+1}</th>`).join('')}
+                <th class="th-maxmin">Max</th>
+                <th class="th-maxmin">Min</th>
+                ${tpList.map((_, i) => `<th class="th-sumatif">S${i+1}</th>`).join('')}
+            </tr>
+        `;
+    }
+
+    // Render Body Tabel & Kalkulasi Otomatis
+    function renderTableBody() {
+        const tbody = document.getElementById('tbodySiswa');
+        tbody.innerHTML = '';
+
+        siswaList.forEach((s, index) => {
+            const tr = document.createElement('tr');
+            
+            // Generate Input Formatif
+            let formatifInputs = '';
+            for (let i = 0; i < tpList.length; i++) {
+                const val = s.formatif[i] !== undefined ? s.formatif[i] : '';
+                formatifInputs += `<td><input type="number" class="input-nilai f-val" data-idx="${i}" value="${val}" oninput="kalkulasiBaris(this); autoSave();"></td>`;
+            }
+
+            // Generate Input Sumatif
+            let sumatifInputs = '';
+            for (let i = 0; i < tpList.length; i++) {
+                const val = s.sumatif[i] !== undefined ? s.sumatif[i] : '';
+                sumatifInputs += `<td><input type="number" class="input-nilai s-val" data-idx="${i}" value="${val}" oninput="kalkulasiBaris(this); autoSave();"></td>`;
+            }
+
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td><input type="text" class="input-nama" value="${s.nama || ''}" style="width:95%; text-align:left;" oninput="autoSave();"></td>
+                <td>
+                    <select class="input-jk" onchange="autoSave();">
+                        <option value="L" ${s.jk==='L'?'selected':''}>L</option>
+                        <option value="P" ${s.jk==='P'?'selected':''}>P</option>
+                    </select>
+                </td>
+                ${formatifInputs}
+                <td class="v-max" style="font-weight:bold;">-</td>
+                <td class="v-min" style="font-weight:bold;">-</td>
+                <td class="tp-max" style="font-size:11px;">-</td>
+                <td class="tp-min" style="font-size:11px;">-</td>
+                ${sumatifInputs}
+                <td class="r-sumatif" style="font-weight:bold;">-</td>
+                <td class="r-sumatif-60">-</td>
+                <td><input type="number" class="input-nilai sas-val" value="${s.sas || ''}" oninput="kalkulasiBaris(this); autoSave();"></td>
+                <td class="sas-40">-</td>
+                <td class="nilai-akhir" style="font-weight:bold; background:#f0fdf4;">-</td>
+            `;
+            tbody.appendChild(tr);
+            kalkulasiBaris(tr.querySelector('.input-nama'));
+        });
+    }
+
+    function tambahBarisSiswa() {
+    // 1. Simpan dulu inputan yang sedang diketik di layar ke array siswaList
+    const rows = document.querySelectorAll('#tbodySiswa tr');
+    if (rows.length > 0) {
+        const updatedSiswa = [];
+        rows.forEach(tr => {
+            const fVals = Array.from(tr.querySelectorAll('.f-val')).map(i => i.value);
+            const sVals = Array.from(tr.querySelectorAll('.s-val')).map(i => i.value);
+            updatedSiswa.push({
+                nama: tr.querySelector('.input-nama').value,
+                jk: tr.querySelector('.input-jk').value,
+                formatif: fVals,
+                sumatif: sVals,
+                sas: tr.querySelector('.sas-val').value
+            });
+        });
+        siswaList = updatedSiswa;
+    }
+
+    // 2. Tambahkan 1 baris kosong baru
+    siswaList.push({
+        nama: "", 
+        jk: "L",
+        formatif: new Array(tpList.length).fill(""),
+        sumatif: new Array(tpList.length).fill(""),
+        sas: ""
+    });
+
+    // 3. Render ulang tabel & simpan
+    renderTableBody();
+    autoSave();
+}
+
+function hapusBarisSiswa() {
+    // 1. Ambil data terkini dari layar
+    const rows = document.querySelectorAll('#tbodySiswa tr');
+    const updatedSiswa = [];
+    
+    rows.forEach(tr => {
+        const fVals = Array.from(tr.querySelectorAll('.f-val')).map(i => i.value);
+        const sVals = Array.from(tr.querySelectorAll('.s-val')).map(i => i.value);
+        updatedSiswa.push({
+            nama: tr.querySelector('.input-nama').value,
+            jk: tr.querySelector('.input-jk').value,
+            formatif: fVals,
+            sumatif: sVals,
+            sas: tr.querySelector('.sas-val').value
+        });
+    });
+
+    // 2. Jika baris lebih dari 1, hapus baris paling bawah
+    if (updatedSiswa.length > 1) {
+        updatedSiswa.pop();
+        siswaList = updatedSiswa;
+    } else {
+        // 3. Jika tersisa 1 baris, BERSIHKAN isinya (reset nama & nilai jadi kosong)
+        siswaList = [{
+            nama: "",
+            jk: "L",
+            formatif: new Array(tpList.length).fill(""),
+            sumatif: new Array(tpList.length).fill(""),
+            sas: ""
+        }];
+    }
+    
+    // 4. Render ulang tabel & simpan otomatis
+    renderTableBody();
+    autoSave();
+}
+
+    // Kalkulasi Otomatis Sesuai Rumus Gambar
+    function kalkulasiBaris(elem) {
+    const tr = elem.closest('tr');
+    
+    // 1. Ambil Formatif & Cari Max / Min / TP Max / TP Min
+    const fInputs = tr.querySelectorAll('.f-val');
+    let fValues = [];
+    fInputs.forEach((inp, idx) => {
+        const v = parseFloat(inp.value);
+        if (!isNaN(v)) fValues.push({ val: v, tp: `TP ${idx+1}` });
+    });
+
+    if (fValues.length > 0) {
+        const maxObj = fValues.reduce((prev, curr) => (curr.val > prev.val) ? curr : prev);
+        const minObj = fValues.reduce((prev, curr) => (curr.val < prev.val) ? curr : prev);
+
+        tr.querySelector('.v-max').innerText = maxObj.val;
+        tr.querySelector('.v-min').innerText = minObj.val;
+        tr.querySelector('.tp-max').innerText = maxObj.tp;
+        tr.querySelector('.tp-min').innerText = minObj.tp;
+    } else {
+        tr.querySelector('.v-max').innerText = '-';
+        tr.querySelector('.v-min').innerText = '-';
+        tr.querySelector('.tp-max').innerText = '-';
+        tr.querySelector('.tp-min').innerText = '-';
+    }
+
+    // 2. Ambil Sumatif & Hitung Rerata Sumatif + 60%
+    const sInputs = tr.querySelectorAll('.s-val');
+    let sSum = 0, sCount = 0;
+    sInputs.forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (!isNaN(v)) { sSum += v; sCount++; }
+    });
+
+    let rSumatif = sCount > 0 ? (sSum / sCount) : 0;
+    let rSumatif60 = rSumatif * 0.6;
+
+    // Menampilkan angka desimal dengan format bersih
+    tr.querySelector('.r-sumatif').innerText = sCount > 0 ? (Math.round(rSumatif * 10) / 10).toFixed(1) : '-';
+    tr.querySelector('.r-sumatif-60').innerText = sCount > 0 ? (Math.round(rSumatif60 * 10) / 10).toFixed(1) : '-';
+
+    // 3. SAS & SAS 40%
+    const sasVal = parseFloat(tr.querySelector('.sas-val').value) || 0;
+    let sas40 = sasVal * 0.4;
+    tr.querySelector('.sas-40').innerText = tr.querySelector('.sas-val').value ? (Math.round(sas40 * 10) / 10).toFixed(1) : '-';
+
+    // 4. Nilai Akhir (Rerata Sumatif 60% + SAS 40%)
+    if (sCount > 0 || tr.querySelector('.sas-val').value !== '') {
+        let na = Math.round(rSumatif60 + sas40);
+        tr.querySelector('.nilai-akhir').innerText = na;
+    } else {
+        tr.querySelector('.nilai-akhir').innerText = '-';
+    }
+}
+
+    // Solusi C - Storage & File System
+    function collectFormData() {
+        const rows = document.querySelectorAll('#tbodySiswa tr');
+        const currentSiswa = [];
+
+        rows.forEach(tr => {
+            const fVals = Array.from(tr.querySelectorAll('.f-val')).map(i => i.value);
+            const sVals = Array.from(tr.querySelectorAll('.s-val')).map(i => i.value);
+            currentSiswa.push({
+                nama: tr.querySelector('.input-nama').value,
+                jk: tr.querySelector('.input-jk').value,
+                formatif: fVals,
+                sumatif: sVals,
+                sas: tr.querySelector('.sas-val').value
+            });
+        });
+
+        return {
+            guru: document.getElementById('namaGuru').value,
+            mapel: document.getElementById('mapel').value,
+            kelas: document.getElementById('kelas').value,
+            semester: document.getElementById('semester').value,
+            tpList: tpList,
+            siswa: currentSiswa
+        };
+    }
+
+    function autoSave() {
+        const data = collectFormData();
+        localStorage.setItem('leger_merdeka_v3', JSON.stringify(data));
+        document.getElementById('lastSavedTime').innerText = new Date().toLocaleTimeString('id-ID');
+        document.getElementById('saveStatus').innerText = "🟢 Auto-Save Aktif";
+    }
+
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem('leger_merdeka_v3');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                document.getElementById('namaGuru').value = data.guru || '';
+                document.getElementById('mapel').value = data.mapel || '';
+                document.getElementById('kelas').value = data.kelas || '';
+                document.getElementById('semester').value = data.semester || '';
+                if (data.tpList) tpList = data.tpList;
+                if (data.siswa) siswaList = data.siswa;
+            } catch (e) {}
+        }
+        initTable();
+    }
+
+    function downloadBackup() {
+        const data = collectFormData();
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `BACKUP_LEGER_${(data.mapel||'MAPEL')}_${(data.kelas||'KELAS')}.json`;
+        a.click();
+    }
+
+    function loadBackupFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                localStorage.setItem('leger_merdeka_v3', JSON.stringify(data));
+                loadFromLocalStorage();
+                alert("✅ Data backup berhasil dimuat!");
+            } catch (err) { alert("❌ File rusak!"); }
+        };
+        reader.readAsText(file);
+    }
+
+    function exportToExcel() {
+    const data = collectFormData();
+    
+    // Helper untuk menangani angka desimal & kolom kosong
+    const formatCellData = (valStr) => {
+        if (!valStr || valStr === '-' || valStr.trim() === '') return '';
+        // Ubah titik desimal ke koma agar pas dengan Excel Indonesia
+        return valStr.toString().replace('.', ',');
+    };
+
+    let tableHtml = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+        <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+        <x:Name>Leger Nilai</x:Name>
+        <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+        </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+        <meta charset="utf-8">
+        <style>
+            table { border-collapse: collapse; }
+            td, th { border: 1px solid #000000; padding: 5px; text-align: center; }
+            .str { mso-number-format:"\\@"; }
+            .num { mso-number-format:"0"; }
+            .dec { mso-number-format:"0\\.0"; }
+            .th-header { background-color: #dbeafe; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <table>
+            <tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">Nama Guru</td><td colspan="5" style="text-align:left; border:none;">: ${data.guru}</td></tr>
+            <tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">Mata Pelajaran</td><td colspan="5" style="text-align:left; border:none;">: ${data.mapel}</td></tr>
+            <tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">Kelas</td><td colspan="5" style="text-align:left; border:none;">: ${data.kelas}</td></tr>
+            <tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">Semester</td><td colspan="5" style="text-align:left; border:none;">: ${data.semester}</td></tr>
+            <tr><td colspan="8" style="border:none;"></td></tr>
+    `;
+
+    // Deskripsi TP
+    tpList.forEach((tp, i) => {
+        tableHtml += `<tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">TP ${i+1}</td><td colspan="10" style="text-align:left; border:none;">: ${tp}</td></tr>`;
+    });
+
+    tableHtml += `<tr><td colspan="8" style="border:none;"></td></tr>`;
+
+    // Header Tabel
+    const tpCount = tpList.length;
+    tableHtml += `
+        <tr>
+            <th rowspan="2" class="th-header">NO</th>
+            <th rowspan="2" class="th-header">Nama Siswa</th>
+            <th rowspan="2" class="th-header">JK</th>
+            <th colspan="${tpCount}" class="th-header">Asesmen Formatif</th>
+            <th colspan="2" class="th-header">Nilai</th>
+            <th rowspan="2" class="th-header">TP Max</th>
+            <th rowspan="2" class="th-header">TP Min</th>
+            <th colspan="${tpCount}" class="th-header">Asesmen Sumatif</th>
+            <th rowspan="2" class="th-header">Rerata Sumatif</th>
+            <th rowspan="2" class="th-header">R. Sumatif 60%</th>
+            <th rowspan="2" class="th-header">SAS</th>
+            <th rowspan="2" class="th-header">SAS 40%</th>
+            <th rowspan="2" class="th-header">Nilai Akhir</th>
+        </tr>
+        <tr>
+            ${tpList.map((_, i) => `<th class="th-header">TP ${i+1}</th>`).join('')}
+            <th class="th-header">Max</th>
+            <th class="th-header">Min</th>
+            ${tpList.map((_, i) => `<th class="th-header">S${i+1}</th>`).join('')}
+        </tr>
+    `;
+
+    // Data Siswa
+    document.querySelectorAll('#tbodySiswa tr').forEach((tr, i) => {
+        tableHtml += `<tr>`;
+        tableHtml += `<td class="num">${i+1}</td>`;
+        tableHtml += `<td style="text-align:left;" class="str">${tr.querySelector('.input-nama').value}</td>`;
+        tableHtml += `<td class="str">${tr.querySelector('.input-jk').value}</td>`;
+        
+        // Formatif (Jika kosong biarkan kosong, jangan dipaksa jadi 0)
+        tr.querySelectorAll('.f-val').forEach(inp => {
+            const val = inp.value.trim();
+            tableHtml += `<td class="num">${val !== "" ? val : ""}</td>`;
+        });
+        
+        tableHtml += `<td class="num">${tr.querySelector('.v-max').innerText}</td>`;
+        tableHtml += `<td class="num">${tr.querySelector('.v-min').innerText}</td>`;
+        tableHtml += `<td class="str">${tr.querySelector('.tp-max').innerText}</td>`;
+        tableHtml += `<td class="str">${tr.querySelector('.tp-min').innerText}</td>`;
+        
+        // Sumatif (Jika kosong biarkan kosong, jangan dipaksa jadi 0)
+        tr.querySelectorAll('.s-val').forEach(inp => {
+            const val = inp.value.trim();
+            tableHtml += `<td class="num">${val !== "" ? val : ""}</td>`;
+        });
+        
+        // Nilai Rerata & Hasil Akhir (Menggunakan format koma desimal Indonesia)
+        tableHtml += `<td class="dec">${formatCellData(tr.querySelector('.r-sumatif').innerText)}</td>`;
+        tableHtml += `<td class="dec">${formatCellData(tr.querySelector('.r-sumatif-60').innerText)}</td>`;
+        tableHtml += `<td class="num">${tr.querySelector('.sas-val').value || ""}</td>`;
+        tableHtml += `<td class="dec">${formatCellData(tr.querySelector('.sas-40').innerText)}</td>`;
+        tableHtml += `<td class="num" style="font-weight:bold;">${tr.querySelector('.nilai-akhir').innerText}</td>`;
+        tableHtml += `</tr>`;
+    });
+
+    tableHtml += `</table></body></html>`;
+
+    // Unduh File
+    const blob = new Blob(['\ufeff' + tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `LEGER_${(data.mapel||'MAPEL')}_${(data.kelas||'KELAS')}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+    function resetForm() {
+    if (confirm("Apakah Anda yakin ingin mengosongkan semua data Leger?")) {
+        // 1. Kosongkan Form Informasi Header
+        const inputsHeader = ['inputGuru', 'inputMapel', 'inputKelas', 'inputSemester'];
+        inputsHeader.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+        });
+
+        // 2. Reset Array Data Utama di Memory
+        tpList = [""]; // Kembali ke 1 TP Kosong
+        siswaList = [
+            {
+                nama: "",
+                jk: "L",
+                formatif: [""],
+                sumatif: [""],
+                sas: ""
+            }
+        ]; // Kembali ke 1 Baris Siswa Kosong
+
+        // 3. Hapus Cadangan Penyimpanan Otomatis Browser
+        localStorage.removeItem('leger_nilai_data');
+
+        // 4. Paksa Render Ulang Seluruh Komponen Tampilan Web
+        renderTpSection();
+        renderTableHeader();
+        renderTableBody();
+
+        // 5. Bersihkan Secara Paksa Seluruh Nilai Kalkulasi Visual
+        document.querySelectorAll('#tbodySiswa tr').forEach(tr => {
+            const namaInput = tr.querySelector('.input-nama');
+            const sasInput = tr.querySelector('.sas-val');
+            if (namaInput) namaInput.value = "";
+            if (sasInput) sasInput.value = "";
+
+            tr.querySelectorAll('.f-val, .s-val').forEach(inp => inp.value = "");
+            
+            // Set teks indikator kalkulasi ke tanda strip (-)
+            const spanReset = ['.v-max', '.v-min', '.tp-max', '.tp-min', '.r-sumatif', '.r-sumatif-60', '.sas-40', '.nilai-akhir'];
+            spanReset.forEach(cls => {
+                const el = tr.querySelector(cls);
+                if (el) el.innerText = "-";
+            });
+        });
+    }
+}
+
+    window.onload = loadFromLocalStorage;
+</script>
+
+</body>
+</html>
