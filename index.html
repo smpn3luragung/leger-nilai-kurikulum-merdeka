@@ -523,7 +523,6 @@ function hapusBarisSiswa() {
     // Helper untuk menangani angka desimal & kolom kosong
     const formatCellData = (valStr) => {
         if (!valStr || valStr === '-' || valStr.trim() === '') return '';
-        // Ubah titik desimal ke koma agar pas dengan Excel Indonesia
         return valStr.toString().replace('.', ',');
     };
 
@@ -546,16 +545,38 @@ function hapusBarisSiswa() {
     </head>
     <body>
         <table>
-            <tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">Nama Guru</td><td colspan="5" style="text-align:left; border:none;">: ${data.guru}</td></tr>
-            <tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">Mata Pelajaran</td><td colspan="5" style="text-align:left; border:none;">: ${data.mapel}</td></tr>
-            <tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">Kelas</td><td colspan="5" style="text-align:left; border:none;">: ${data.kelas}</td></tr>
-            <tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">Semester</td><td colspan="5" style="text-align:left; border:none;">: ${data.semester}</td></tr>
+            <!-- INFORMASI HEADER (Kolom A: Label, Kolom B: Kosong/Gabung A, Kolom C: Titik dua, Kolom D: Nilai) -->
+            <tr>
+                <td colspan="2" style="text-align:left; font-weight:bold; border:none;">Nama Guru</td>
+                <td style="text-align:center; font-weight:bold; border:none;">:</td>
+                <td colspan="5" style="text-align:left; border:none;">${data.guru}</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align:left; font-weight:bold; border:none;">Mata Pelajaran</td>
+                <td style="text-align:center; font-weight:bold; border:none;">:</td>
+                <td colspan="5" style="text-align:left; border:none;">${data.mapel}</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align:left; font-weight:bold; border:none;">Kelas</td>
+                <td style="text-align:center; font-weight:bold; border:none;">:</td>
+                <td colspan="5" style="text-align:left; border:none;">${data.kelas}</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align:left; font-weight:bold; border:none;">Semester</td>
+                <td style="text-align:center; font-weight:bold; border:none;">:</td>
+                <td colspan="5" style="text-align:left; border:none;">${data.semester}</td>
+            </tr>
             <tr><td colspan="8" style="border:none;"></td></tr>
     `;
 
-    // Deskripsi TP
+    // Deskripsi TP (Kolom C khusus untuk titik dua)
     tpList.forEach((tp, i) => {
-        tableHtml += `<tr><td colspan="3" style="text-align:left; font-weight:bold; border:none;">TP ${i+1}</td><td colspan="10" style="text-align:left; border:none;">: ${tp}</td></tr>`;
+        tableHtml += `
+            <tr>
+                <td colspan="2" style="text-align:left; font-weight:bold; border:none;">TP ${i+1}</td>
+                <td style="text-align:center; font-weight:bold; border:none;">:</td>
+                <td colspan="10" style="text-align:left; border:none;">${tp}</td>
+            </tr>`;
     });
 
     tableHtml += `<tr><td colspan="8" style="border:none;"></td></tr>`;
@@ -593,7 +614,7 @@ function hapusBarisSiswa() {
         tableHtml += `<td style="text-align:left;" class="str">${tr.querySelector('.input-nama').value}</td>`;
         tableHtml += `<td class="str">${tr.querySelector('.input-jk').value}</td>`;
         
-        // Formatif (Jika kosong biarkan kosong, jangan dipaksa jadi 0)
+        // Formatif
         tr.querySelectorAll('.f-val').forEach(inp => {
             const val = inp.value.trim();
             tableHtml += `<td class="num">${val !== "" ? val : ""}</td>`;
@@ -604,13 +625,13 @@ function hapusBarisSiswa() {
         tableHtml += `<td class="str">${tr.querySelector('.tp-max').innerText}</td>`;
         tableHtml += `<td class="str">${tr.querySelector('.tp-min').innerText}</td>`;
         
-        // Sumatif (Jika kosong biarkan kosong, jangan dipaksa jadi 0)
+        // Sumatif
         tr.querySelectorAll('.s-val').forEach(inp => {
             const val = inp.value.trim();
             tableHtml += `<td class="num">${val !== "" ? val : ""}</td>`;
         });
         
-        // Nilai Rerata & Hasil Akhir (Menggunakan format koma desimal Indonesia)
+        // Nilai Rerata & Hasil Akhir
         tableHtml += `<td class="dec">${formatCellData(tr.querySelector('.r-sumatif').innerText)}</td>`;
         tableHtml += `<td class="dec">${formatCellData(tr.querySelector('.r-sumatif-60').innerText)}</td>`;
         tableHtml += `<td class="num">${tr.querySelector('.sas-val').value || ""}</td>`;
